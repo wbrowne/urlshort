@@ -10,23 +10,25 @@ import (
 func main() {
 	mux := defaultMux()
 
-	// Build the MapHandler using the mux as the fallback
 	pathsToUrls := map[string]string{
 		"/urlshort-godoc": "https://godoc.org/github.com/gophercises/urlshort",
 		"/yaml-godoc":     "https://godoc.org/gopkg.in/yaml.v2",
 	}
 	mapHandler := urlshort.MapHandler(pathsToUrls, mux)
 
-	// Build the YAMLHandler using the mapHandler as the fallback
+	yamlString := readFile("pathMapping.yml")
+	yamlHandler, err := urlshort.YAMLHandler([]byte(yamlString), mapHandler)
+	if err != nil {
+		panic(err)
+	}
 
-	yaml := readYmlFile("pathMapping.yml")
-
-	yamlHandler, err := urlshort.YAMLHandler([]byte(yaml), mapHandler)
+	jsonString := readFile("pathMapping.json")
+	jsonHandler, err := urlshort.JSONHandler([]byte(jsonString), yamlHandler)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("Starting the server on :8080")
-	http.ListenAndServe(":8081", yamlHandler)
+	http.ListenAndServe(":8080", jsonHandler)
 }
 
 func defaultMux() *http.ServeMux {
@@ -39,10 +41,10 @@ func hello(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello, world!")
 }
 
-func readYmlFile(filename string) []byte {
-	ymlFile, err := ioutil.ReadFile(filename)
+func readFile(filename string) []byte {
+	file, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return ymlFile
+	return file
 }
